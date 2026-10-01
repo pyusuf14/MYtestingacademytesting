@@ -1,0 +1,32 @@
+• Parameter: A configurable internal variable within a model that is learned from training data to define its behavior.
+• Temperature: A hyperparameter that controls the randomness or creativity of an AI's generated responses.
+• Gen AI: Artificial intelligence systems capable of creating new content like text, images, or audio based on patterns learned from training data.
+• Token: A basic unit of text (like a word or a syllable) that an AI model processes and generates.
+• RAG: Retrieval-Augmented Generation, a technique that improves AI accuracy by fetching relevant facts from external sources before generating a response.
+• Agentic AI: Systems designed to autonomously plan, use tools, and take sequential actions to achieve complex, long-term goals.
+• Bias: Systematic errors or prejudices in an AI's outputs resulting from skewed or unrepresentative training data.
+• Embedding: A mathematical vector representation that captures the semantic meaning and relationships of data or text.
+• Fine Tune: The process of taking a pre-trained model and training it further on a specific dataset to adapt it for a specialized task.
+• Hallucination: A phenomenon where an AI confidently generates false, inaccurate, or fabricated information.
+• Context Window: The maximum amount of text (measured in tokens) that an AI model can process or remember at a single time.
+• Vector DB: A specialized database designed to efficiently store, index, and search high-dimensional vector embeddings based on semantic similarity.
+• Schema: A structured blueprint or framework that defines how data is organized, formatted, or categorized within a system.
+• Prompt: The input text, instruction, or question provided to an AI model to guide its generated response.
+• MCP: Model Context Protocol, an open standard that enables AI models to securely connect and share context with external tools and data sources.
+• LangChain: A popular open-source software framework designed to simplify the creation of applications using large language models.
+• Skills: Predefined capabilities or functions that an AI model can call upon to execute specific tasks.
+• Neural Network which can learn: An interconnected computational structure inspired by the human brain that adjusts its internal pathways to recognize patterns from data.
+• Agents: Autonomous AI systems engineered to perceive their environment, make decisions, and execute tasks independently.
+• Weights: The numeric values within a neural network that determine the strength and influence of a connection between processing nodes.
+• Chatbot: A software application designed to simulate human conversation through text or voice interactions.
+• Attention Number: Not valid (This is not a standard industry term; you likely mean the Attention Mechanism, which computes numeric weights to determine which parts of an input sequence a model should focus on).
+• Harness: A testing framework or suite of software tools used to benchmark, evaluate, and stress-test the performance of AI models.
+• Prompt Injection: A security vulnerability where malicious user inputs trick an AI into ignoring its original instructions and executing unauthorized commands.
+• GuardRails: Safety mechanisms and programmatic boundaries implemented around an AI model to filter out toxic, biased, or unwanted outputs.
+• Parding: Not valid (This is a typo; you likely mean Parsing, which is the process of analyzing a string of data or text to break it down into structured, recognizable components).
+• Evals: Systematic evaluations and benchmarks used to measure an AI model's accuracy, safety, and functional performance.
+• Chunks: Smaller, manageable pieces of a larger dataset or document created to fit within an AI model's processing limits.
+• Ground Truth: The foundational, verified data used as the absolute standard of accuracy to train and evaluate AI models.
+Invalid / Typo Alerts:
+• Attention Number: Not a standard term; typically referred to as the Attention Mechanism or Attention Weights.
+• Parding: Not a valid AI term; likely a typo for Parsing.
