@@ -1,0 +1,158 @@
+"""FastAPI chatbot layer + web portal for QABuddy.ai."""
+from __future__ import annotations
+
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
+
+from . import config
+from .retrieve import retrieve
+from .synthesize import synthesize
+
+app = FastAPI(title="QABuddy.ai", version="0.1.0")
+
+origins = [o.strip() for o in config.CORS_ORIGINS.split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+PORTAL_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QABuddy.ai — QA Knowledge Assistant</title>
+<style>
+  :root { --bg:#0f1420; --panel:#1a2130; --accent:#4f8cff; --text:#e6eaf2; --muted:#8b93a7; --border:#2a3346; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; }
+  header { padding:16px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+  header h1 { font-size:18px; margin:0; font-weight:600; }
+  header .badge { font-size:12px; color:var(--muted); }
+  main { flex:1; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:16px; }
+  .msg { max-width:820px; width:100%; padding:14px 16px; border-radius:10px; line-height:1.55; font-size:14px; white-space:pre-wrap; }
+  .user { align-self:flex-end; background:var(--accent); color:#fff; }
+  .assistant { align-self:flex-start; background:var(--panel); border:1px solid var(--border); }
+  .citations { margin-top:10px; padding-top:10px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); }
+  .citations b { color:var(--text); }
+  .sources { margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { background:#24304a; border:1px solid var(--border); color:#aeb9d6; padding:3px 8px; border-radius:12px; font-size:11px; }
+  footer { padding:16px 24px; border-top:1px solid var(--border); display:flex; gap:10px; }
+  input { flex:1; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px 14px; color:var(--text); font-size:14px; }
+  input:focus { outline:none; border-color:var(--accent); }
+  button { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:0 20px; font-size:14px; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  .spinner { color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>QABuddy.ai</h1>
+  <span class="badge">Hybrid RAG · Qdrant + BGE · cited answers</span>
+</header>
+<main id="log"></main>
+<footer>
+  <input id="q" placeholder="Ask a question about your frameworks, test cases, PRDs, or JIRA bugs…" autofocus />
+  <button id="ask">Ask</button>
+</footer>
+<script>
+const log = document.getElementById('log');
+const input = document.getElementById('q');
+const btn = document.getElementById('ask');
+
+function add(text, who, citations, sources) {
+  const m = document.createElement('div');
+  m.className = 'msg ' + who;
+  m.textContent = text;
+  if (citations && citations.length) {
+    const c = document.createElement('div');
+    c.className = 'citations';
+    c.innerHTML = '<b>Citations:</b> ' + citations.map(x => x.replace(/</g,'&lt;')).join(' · ');
+    m.appendChild(c);
+  }
+  if (sources && sources.length) {
+    const s = document.createElement('div');
+    s.className = 'sources';
+    sources.forEach(sr => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.textContent = (sr.citation + ' — ' + sr.title).slice(0,80);
+      s.appendChild(chip);
+    });
+    m.appendChild(s);
+  }
+  log.appendChild(m);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function ask() {
+  const q = input.value.trim();
+  if (!q) return;
+  add(q, 'user');
+  input.value = '';
+  btn.disabled = true;
+  const spin = document.createElement('div');
+  spin.className = 'spinner msg assistant';
+  spin.textContent = 'Searching knowledge base…';
+  log.appendChild(spin);
+  try {
+    const r = await fetch('/ask', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question:q}) });
+    const d = await r.json();
+    spin.remove();
+    add(d.answer || '(no answer)', 'assistant', d.citations, d.sources);
+  } catch (e) {
+    spin.remove();
+    add('Error: ' + e.message, 'assistant');
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+btn.onclick = ask;
+input.onkeydown = e => { if (e.key === 'Enter') ask(); };
+add('Hi! I\'m QABuddy. Ask me anything about your QA knowledge base — test cases, PRDs, JIRA bugs, frameworks, or logs.', 'assistant');
+</script>
+</body>
+</html>"""
+
+
+class Query(BaseModel):
+    question: str
+    top_k: int = 8
+
+
+class Answer(BaseModel):
+    answer: str
+    citations: list[str]
+    sources: list[dict]
+    mode: str
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.get("/", response_class=HTMLResponse)
+def portal():
+    return HTMLResponse(PORTAL_HTML)
+
+
+@app.post("/ask", response_model=Answer)
+def ask(q: Query):
+    chunks = retrieve(q.question, top_k=q.top_k)
+    result = synthesize(q.question, chunks)
+    return Answer(**result)
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
